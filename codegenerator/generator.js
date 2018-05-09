@@ -25,5 +25,7 @@ structure.set("imports", imps);
 structure.set("functions", functs);
 structure.set("operators", ops);
 
+console.log(`Structure: ${[...structure]}`);
+
 printer.print(structure);
 // parsing
