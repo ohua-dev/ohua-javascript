@@ -9,8 +9,6 @@ exports.print = function(parsedObjects)
 {
   parsedObjects.forEach(function(value, key, map)
   {
-    var k = JSON.stringify(key)
-    var v = JSON.stringify(value)
-    console.log(`m[${k}] = ${v}`);
+    console.log(`m[${key}] = [${[...value]}]`);
   })
 }

@@ -16,7 +16,10 @@ exports.extractDependencies = function(sfDependencies)
 
   console.log(`Imports: [${[...imports]}]     Functions: [${functions}]`);
   //TODO: find out why these returns do not work well
-  return imports, functions;
+  return {
+    imports: imports,
+    functions: functions
+  };
 }
 
 // returns all defined operatos with the function to call
@@ -37,10 +40,14 @@ exports.extractOperators = function(JSONops)
 exports.parseGraph = function(ohua)
 {
   // get imports and funtions
-  var imps, fncts = module.exports.extractDependencies(ohua.sfDependencies);
+  var dependencies = module.exports.extractDependencies(ohua.sfDependencies);
   // get operators
   var ops = module.exports.extractOperators(ohua.graph.operators);
 
   //console.log(`${imps.length}`);
-  return imps, fncts, ops;
+  return {
+    functions: dependencies.functions,
+    imports: dependencies.imports,
+    operations: ops
+  };
 }

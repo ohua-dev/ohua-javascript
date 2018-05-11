@@ -19,11 +19,11 @@ var rawJSON = fs.readFileSync(args[0]);
 var graph = JSON.parse(rawJSON);
 
 // TODO(br): fix parser
-var imps, functs, ops = parser.parseGraph(graph);
+var returns = parser.parseGraph(graph);
 structure = new Map();
-structure.set("imports", imps);
-structure.set("functions", functs);
-structure.set("operators", ops);
+structure.set("imports", returns.imports);
+structure.set("functions", returns.functions);
+structure.set("operators", returns.operations);
 
 console.log(`Structure: ${[...structure]}`);
 
