@@ -18,16 +18,15 @@ var graph = JSON.parse(rawJSON);
 
 var returns = parseGraph(graph);
 var structure = new Map();
-structure.set("imports", returns.imports);
-structure.set("functions", returns.functions);
-structure.set("operators", returns.operations);
-structure.set("arcs", returns.arcs);
-
-// console.log(`Structure: ${[...structure]}`);
+structure["imports"] = returns.imports;
+structure["functions"] = returns.functions;
+structure["operators"] = returns.operations;
+structure["arcs"] = returns.arcs;
 
 print(structure);
-// parsing
 
+// executing
+executeGraph(structure);
 
 // returns imports and functions
 function extractDependencies(sfDependencies)
@@ -90,8 +89,8 @@ function writeJS(parsedObjects, destination)
 // executing the parsed details
 function executeGraph(parsedObjects)
 {
-  let operators = parsedObjects["operators"]
-  let arcs = parsedObjects["arcs"]
+  let operators = parsedObjects["operators"];
+  let arcs = parsedObjects["arcs"];
   let workers = new Map();
   operators.forEach(function(key, value, map)
   {
@@ -103,8 +102,7 @@ function executeGraph(parsedObjects)
     {
       if (arcs[i].source.val == id)
       {
-        sourceTo.push({target: arcs[i].target.operator, index: arcs[i].target.index)
-        }
+        sourceTo.push({target: arcs[i].target.operator, index: arcs[i].target.index})
       }
     }
     workers[key] = {worker: w, sourceTo: sourceTo};
@@ -120,7 +118,7 @@ function executeGraph(parsedObjects)
       {
         console.log('intermediate result: ', e.data);
 
-        for (var i = 0; i < length, i++)
+        for (var i = 0; i < length; i++)
         {
           // push to every worker waiting for the result
           workers[value.sourceTo.target].worker.postMessage({parameter: e.data});
@@ -134,15 +132,6 @@ function executeGraph(parsedObjects)
       })
     }
   })
-}
-  w.addEventListener('message', function(e)
-  {
-    console.log(`operator ${id} replied: `, e.data);
-    var length = sourceTo.length;
-    for (var i=0; i < length; i++)
-    {
-
-    }
 }
 
 // just printing the parsed objects to stdout
