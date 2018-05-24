@@ -60,23 +60,9 @@ function extractOperators(JSONops)
   for (var i=0; i < length; i++)
   {
     var op = JSONops[i];
-    operators.set(op.operatorId, `${op.operatorType.qbNamespace}.${op.operatorType.qbName}`);
+    operators.set(op.operatorId, {namespace: op.operatorType.qbNamespace, function: op.operatorType.qbName});
   }
   return operators;
-}
-
-// returns all arcs found in the JSONconstruct
-function extractArcs(JSONarcs)
-{
-  var arcs = new Map();
-
-  var length = JSONarcs.length;
-  for (var i=0; i < length; i++)
-  {
-    var arc = JSONarcs[i]
-    arcs.set(i, arc)
-  }
-  return arcs
 }
 
 function parseGraph(ohua)
@@ -86,7 +72,7 @@ function parseGraph(ohua)
   // get operators
   var ops = extractOperators(ohua.graph.operators);
   // get operators
-  var arcs = extractArcs(ohua.graph.arcs)
+  var arcs = ohua.graph.arcs
 
   return {
     functions: dependencies.functions,
@@ -99,6 +85,64 @@ function parseGraph(ohua)
 function writeJS(parsedObjects, destination)
 {
   // TODO(br): implement printing JS to <destination>
+}
+
+// executing the parsed details
+function executeGraph(parsedObjects)
+{
+  let operators = parsedObjects["operators"]
+  let arcs = parsedObjects["arcs"]
+  let workers = new Map();
+  operators.forEach(function(key, value, map)
+  {
+    let w = new Worker("webworker.js");
+    let id = key;
+    let length = arcs.length;
+    let sourceTo = [];
+    for (var i=0; i < length; i++)
+    {
+      if (arcs[i].source.val == id)
+      {
+        sourceTo.push({target: arcs[i].target.operator, index: arcs[i].target.index)
+        }
+      }
+    }
+    workers[key] = {worker: w, sourceTo: sourceTo};
+  });
+
+  workers.forEach(function(key, value, map)
+  {
+    let length = value.sourceTo.length
+    // registering Listeners & pushing results to the next Operator
+    if (length > 0)
+    {
+      value.worker.addEventListener('message', function(e)
+      {
+        console.log('intermediate result: ', e.data);
+
+        for (var i = 0; i < length, i++)
+        {
+          // push to every worker waiting for the result
+          workers[value.sourceTo.target].worker.postMessage({parameter: e.data});
+        }
+      })
+    } else
+    {
+      value.worker.addEventListener('message', function(e)
+      {
+        console.log('result: ', e.data);
+      })
+    }
+  })
+}
+  w.addEventListener('message', function(e)
+  {
+    console.log(`operator ${id} replied: `, e.data);
+    var length = sourceTo.length;
+    for (var i=0; i < length; i++)
+    {
+
+    }
 }
 
 // just printing the parsed objects to stdout
