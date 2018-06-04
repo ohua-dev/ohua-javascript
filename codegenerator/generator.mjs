@@ -7,27 +7,6 @@ function getDirFromPath(path)
   return( arr.join('/') );
 }
 
-// Starting of production logic
-var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.js"
-// append dir of graph because we expect the sFn's in the same dir
-module.paths.push(getDirFromPath(args[0]));
-
-// loading JSON
-var rawJSON = fs.readFileSync(args[0]);
-var graph = JSON.parse(rawJSON);
-
-var returns = parseGraph(graph);
-var structure = new Map();
-structure["imports"] = returns.imports;
-structure["functions"] = returns.functions;
-structure["operators"] = returns.operations;
-structure["arcs"] = returns.arcs;
-
-print(structure);
-
-// executing
-executeGraph(structure);
-
 // returns imports and functions
 function extractDependencies(sfDependencies)
 {
@@ -89,7 +68,7 @@ function writeJS(parsedObjects, destination)
 // executing the parsed details
 function executeGraph(parsedObjects)
 {
-  var Worker = require('tiny-worker');
+  var Worker = require('webworker-threads').Worker;
   let operators = parsedObjects["operators"];
   let arcs = parsedObjects["arcs"];
   let workers = new Map();
@@ -115,9 +94,9 @@ function executeGraph(parsedObjects)
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
     {
-      value.worker.onmessage(function(e)
+      value.worker.addEventListener('message', function(e)
       {
-        console.log('intermediate result: ', JSON.stringify(e.data));
+        console.log('intermediate result: ', e.data);
 
         for (var i = 0; i < length; i++)
         {
@@ -127,9 +106,9 @@ function executeGraph(parsedObjects)
       })
     } else
     {
-      value.worker.onmessage(function(e)
+      value.worker.addEventListener('message', function(e)
       {
-        console.log('result: ', JSON.stringify(e.data));
+        console.log('result: ', e.data);
       })
     }
   })
@@ -141,6 +120,27 @@ function print(parsedObjects)
 {
   parsedObjects.forEach(function(value, key, map)
   {
-    console.log(key, JSON.stringify(value));
+    console.log(`m[${key}] = [${[...value]}]`);
   })
 }
+
+// Starting of production logic
+var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.js"
+// append dir of graph because we expect the sFn's in the same dir
+//module.paths.push(getDirFromPath(args[0]));
+
+// loading JSON
+var rawJSON = fs.readFileSync(args[0]);
+var graph = JSON.parse(rawJSON);
+
+var returns = parseGraph(graph);
+var structure = new Map();
+structure["imports"] = returns.imports;
+structure["functions"] = returns.functions;
+structure["operators"] = returns.operations;
+structure["arcs"] = returns.arcs;
+
+print(structure);
+
+// executing
+executeGraph(structure);
