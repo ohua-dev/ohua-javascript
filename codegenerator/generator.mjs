@@ -1,4 +1,4 @@
-import fs from "fs";  // sould be working as of example: https://nodejs.org/api/esm.html#esm_notable_differences_between_import_and_require
+var fs = require("fs");  // should be working as of example: https://nodejs.org/api/esm.html#esm_notable_differences_between_import_and_require
 
 function getDirFromPath(path)
 { // found here: https://stackoverflow.com/questions/16750524/remove-last-directory-in-url?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
@@ -10,7 +10,7 @@ function getDirFromPath(path)
 // Starting of production logic
 var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.js"
 // append dir of graph because we expect the sFn's in the same dir
-// module.paths.push(getDirFromPath(args[0]));
+module.paths.push(getDirFromPath(args[0]));
 
 // loading JSON
 var rawJSON = fs.readFileSync(args[0]);
@@ -89,12 +89,13 @@ function writeJS(parsedObjects, destination)
 // executing the parsed details
 function executeGraph(parsedObjects)
 {
+  var Worker = require('tiny-worker');
   let operators = parsedObjects["operators"];
   let arcs = parsedObjects["arcs"];
   let workers = new Map();
   operators.forEach(function(key, value, map)
   {
-    let w = new Worker("webworker.js");
+    let w = new Worker("codegenerator/webworker.js");
     let id = key;
     let length = arcs.length;
     let sourceTo = [];
@@ -114,9 +115,9 @@ function executeGraph(parsedObjects)
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
     {
-      value.worker.addEventListener('message', function(e)
+      value.worker.onmessage(function(e)
       {
-        console.log('intermediate result: ', e.data);
+        console.log('intermediate result: ', JSON.stringify(e.data));
 
         for (var i = 0; i < length; i++)
         {
@@ -126,9 +127,9 @@ function executeGraph(parsedObjects)
       })
     } else
     {
-      value.worker.addEventListener('message', function(e)
+      value.worker.onmessage(function(e)
       {
-        console.log('result: ', e.data);
+        console.log('result: ', JSON.stringify(e.data));
       })
     }
   })
@@ -140,6 +141,6 @@ function print(parsedObjects)
 {
   parsedObjects.forEach(function(value, key, map)
   {
-    console.log(`m[${key}] = [${[...value]}]`);
+    console.log(key, JSON.stringify(value));
   })
 }
