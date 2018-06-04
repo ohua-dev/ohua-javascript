@@ -126,8 +126,6 @@ function print(parsedObjects)
 
 // Starting of production logic
 var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.js"
-// append dir of graph because we expect the sFn's in the same dir
-//module.paths.push(getDirFromPath(args[0]));
 
 // loading JSON
 var rawJSON = fs.readFileSync(args[0]);

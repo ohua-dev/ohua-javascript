@@ -1,9 +1,9 @@
 TODO:
+  - statisch bauen, dann ausführen
   - Webworker vs. Node.js:
     - Adapter Node.js - Webworker: Task & Channel API (blocking Channel)
     - Statesharing?
   - map SFN to webworkers -> start them and post result to next until done
-  - check if updated paths are still necessary
 
 
 Node concurrency:
@@ -11,8 +11,6 @@ Node concurrency:
   - concurrency through C++-APIs (browser wpuld have web-APIs)
   - Node does not provide conucrrency
   - no native Webworkers -> Packages (fail to install with package manager)
-
-dynamisches bauen möglich: Skript für Webworker direkt übergeben -> import im Webworker
 
 
 enable: --experimental-modules
