@@ -1,20 +1,11 @@
-hello = (function()
+function world(arg)
 {
-  function calc(arg)
-  {
-    console.info(`Input: ${arg}`);
-    return (arg * 2);
-  }
+  console.info(`Input: ${arg}`);
+  return (parseInt(arg) + 2);
+}
 
-  export function world(arg)
-  {
-      console.info(`Intermediate: ${arg}`);
-      return (arg * 2);
-  }
-
-  return
-  {
-    calc: calc,
-    world: world
-  }
-})()
+function calc(arg)
+{
+  console.log(`Input: ${arg}`);
+  return (parseInt(arg) * 2) ;
+}

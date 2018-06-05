@@ -132,7 +132,8 @@ function registerMessageHandlers(workers, path)
         for (var i=0; i < length; i++)
         {
           // push to every worker waiting for the result
-          workers[value.sourceTo.target].worker.postMessage(
+          console.log("value : ", value.sourceTo[0].target);
+          workers.get(value.sourceTo[0].target).worker.postMessage(
             {
               function: value.operator.function,
               namespace: value.operator.namespace[0],
@@ -174,7 +175,6 @@ function startCalculation(arcs, operators, path, workers, input)
   for (var i=0; i < length; i++)
   {
     let dest = starts[i].operator;
-    console.log("workers: ", workers)
     workers.get(dest).worker.postMessage(
       {
         function: operators.get(dest).function,
@@ -248,8 +248,7 @@ function main()
   // executing
   executeGraph(structure, path, input);
 
-  // not necessary because webworker close themselves
-  //areCallbacksDone();
+  areCallbacksDone();
 
 }
 
