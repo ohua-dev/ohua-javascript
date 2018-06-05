@@ -63,21 +63,43 @@ function parseGraph(ohua)
 function writeJS(parsedObjects, destination)
 {
   // TODO(br): implement printing JS to <destination>
+  var operators = parsedObjects["operators"];
+  var arcs = parsedObjects["arcs"];
+  operators.forEach(function(key, value, map)
+  {
+    var sourcecode = `self.addEventlistener("message", function(e)
+    {
+      var data = e.data;
+      var result;
+      // webworker only support importScripts()
+      importScripts(${data.path}/${data.namespace})
+      if(data.hasOwnProperty("parameter"))
+      {
+        result = ${func}(data.parameter);
+      } else
+      {
+        result = ${func}();
+      }
+      self.postMessage(result);
+      self.close();
+    }, false)`
+  });
 }
 
-// executing the parsed details
-function executeGraph(parsedObjects)
+// building the map of webworkers and the destination of their results
+function buildWorkerMap(arcs, operators)
 {
+  console.log("buildWorkerMap");
+
+  var workers = new Map();
   var Worker = require('webworker-threads').Worker;
-  let operators = parsedObjects["operators"];
-  let arcs = parsedObjects["arcs"];
-  let workers = new Map();
-  operators.forEach(function(key, value, map)
+  operators.forEach(function(value, key, map)
   {
     let w = new Worker("codegenerator/webworker.js");
     let id = key;
-    let length = arcs.length;
     let sourceTo = [];
+    let length = arcs.length;
+    // building list to push result to
     for (var i=0; i < length; i++)
     {
       if (arcs[i].source.val == id)
@@ -85,10 +107,18 @@ function executeGraph(parsedObjects)
         sourceTo.push({target: arcs[i].target.operator, index: arcs[i].target.index})
       }
     }
+    // saving worker with targets to push result to
     workers[key] = {worker: w, sourceTo: sourceTo};
   });
+  return workers;
+}
 
-  workers.forEach(function(key, value, map)
+// registers all messagepassing listeners
+function registerEventlisteners(workers)
+{
+  console.log("registerEventlisteners");
+
+  workers.forEach(function(value, key, map)
   {
     let length = value.sourceTo.length
     // registering Listeners & pushing results to the next Operator
@@ -98,7 +128,7 @@ function executeGraph(parsedObjects)
       {
         console.log('intermediate result: ', e.data);
 
-        for (var i = 0; i < length; i++)
+        for (var i=0; i < length; i++)
         {
           // push to every worker waiting for the result
           workers[value.sourceTo.target].worker.postMessage({parameter: e.data});
@@ -114,31 +144,75 @@ function executeGraph(parsedObjects)
   })
 }
 
+// posts the input to the entry points to trigger calculation
+function startCalculation(arcs, workers, input)
+{
+  console.log("start calculation");
+  // find entrypoint
+  var starts = [];
+  var length = arcs.length;
+  for (var i=0; i < length; i++)
+  {
+    if (arcs[i].source.type != "local")
+    {
+      starts.push(arcs[i].target);
+    }
+  }
+
+  // pushing input to all starting points
+  var length = starts.length;
+  for (var i=0; i < length; i++)
+  {
+    let dest = starts[i].operator;
+    workers[dest].worker.postMessage({parameter: input});
+  }
+}
+
+// executing the parsed details
+function executeGraph(parsedObjects, input)
+{
+  console.log("execute graph");
+  var operators = parsedObjects["operators"];
+  var arcs = parsedObjects["arcs"];
+  var workers = buildWorkerMap(arcs, operators);
+  registerEventlisteners(workers);
+  startCalculation(arcs, workers, input);
+
+  //TODO(br): find out if all operators ran
+}
+
 // just printing the parsed objects to stdout
 // expect to get handed a map
 function print(parsedObjects)
 {
+  console.log("BAM")
   parsedObjects.forEach(function(value, key, map)
   {
     console.log(`m[${key}] = [${[...value]}]`);
   })
 }
 
-// Starting of production logic
-var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.js"
+function main()
+{
+  var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.mjs"
 
-// loading JSON
-var rawJSON = fs.readFileSync(args[0]);
-var graph = JSON.parse(rawJSON);
+  // loading JSON
+  var rawJSON = fs.readFileSync(args[0]);
+  var graph = JSON.parse(rawJSON);
+  var input = args[1];
 
-var returns = parseGraph(graph);
-var structure = new Map();
-structure["imports"] = returns.imports;
-structure["functions"] = returns.functions;
-structure["operators"] = returns.operations;
-structure["arcs"] = returns.arcs;
+  var returns = parseGraph(graph);
+  var structure = new Map();
+  structure["imports"] = returns.imports;
+  structure["functions"] = returns.functions;
+  structure["operators"] = returns.operations;
+  structure["arcs"] = returns.arcs;
 
-print(structure);
+  //print(structure);
+  //console.log(structure);
 
-// executing
-executeGraph(structure);
+  // executing
+  executeGraph(structure, input);
+}
+
+main();
