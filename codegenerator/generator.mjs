@@ -102,21 +102,21 @@ function buildWorkerMap(arcs, operators)
     // building list to push result to
     for (var i=0; i < length; i++)
     {
-      if (arcs[i].source.val == id)
+      if (arcs[i].source.val.operator == id)
       {
         sourceTo.push({target: arcs[i].target.operator, index: arcs[i].target.index})
       }
     }
     // saving worker with targets to push result to
-    workers.set(key,  {worker: w, sourceTo: sourceTo, operator: operators[key]});
+    workers.set(key,  {worker: w, sourceTo: sourceTo, operator: value});
   });
   return workers;
 }
 
 // registers all messagepassing listeners
-function registerEventlisteners(workers, path)
+function registerMessageHandlers(workers, path)
 {
-  console.log("registerEventlisteners");
+  console.log("registerMessageHandlers");
 
   workers.forEach(function(value, key, map)
   {
@@ -124,29 +124,32 @@ function registerEventlisteners(workers, path)
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
     {
-      value.worker.addEventListener('message', function(e)
+      value.worker.onmessage = function(e)
       {
         console.log('intermediate result: ', e.data);
+        doneCallbacks++;
 
         for (var i=0; i < length; i++)
         {
           // push to every worker waiting for the result
           workers[value.sourceTo.target].worker.postMessage(
             {
-              function: operators[dest].function,
-              namespace: operators[dest].namespace,
+              function: value.operator.function,
+              namespace: value.operator.namespace[0],
               parameter: e.data,
               path: path,
             }
           );
+          requiredCallbacks++;
         }
-      })
+      }
     } else
     {
-      value.worker.addEventListener('message', function(e)
+      value.worker.onmessage = function(e)
       {
         console.log('result: ', e.data);
-      })
+        doneCallbacks++;
+      }
     }
   })
 }
@@ -171,16 +174,16 @@ function startCalculation(arcs, operators, path, workers, input)
   for (var i=0; i < length; i++)
   {
     let dest = starts[i].operator;
-    console.log(dest);
-    console.log(workers)
+    console.log("workers: ", workers)
     workers.get(dest).worker.postMessage(
       {
         function: operators.get(dest).function,
-        namespace: operators.get(dest).namespace,
+        namespace: operators.get(dest).namespace[0],
         parameter: input,
         path: path,
       }
     );
+    requiredCallbacks++;
   }
 }
 
@@ -191,7 +194,7 @@ function executeGraph(parsedObjects, path, input)
   var operators = parsedObjects["operators"];
   var arcs = parsedObjects["arcs"];
   var workers = buildWorkerMap(arcs, operators);
-  registerEventlisteners(workers, path);
+  registerMessageHandlers(workers, path);
   startCalculation(arcs, operators, path, workers, input);
 
   //TODO(br): find out if all operators ran
@@ -210,6 +213,8 @@ function print(parsedObjects)
 function extractPath(path)
 {
   var res = path.split("/")
+  // removing last entry
+  res.pop()
   var unix = true;
   if (res.length < 2)
   {
@@ -242,6 +247,24 @@ function main()
   path = extractPath(path);
   // executing
   executeGraph(structure, path, input);
+
+  // not necessary because webworker close themselves
+  //areCallbacksDone();
+
 }
+
+function areCallbacksDone(){
+  if (!(requiredCallbacks == 0 || doneCallbacks == 0) && requiredCallbacks == doneCallbacks)
+  {
+    // we are done because there were callbacks registered and they returned
+    process.exit();
+  } else {
+    // no Callbacks registered or not all returned, run again in 100ms
+    setTimeout(areCallbacksDone, 100);
+  }
+}
+
+var requiredCallbacks = 0;
+var doneCallbacks = 0;
 
 main();
