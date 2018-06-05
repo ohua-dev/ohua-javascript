@@ -10,10 +10,11 @@ self.addEventlistener("message", function(e)
   importScripts(moduleSpecifier)
   if(data.hasOwnProperty("parameter"))
   {
-    result = func(data.parameter);
+    // apply calls a function
+    result = func.apply(null, data.parameter);
   } else
   {
-    result = func();
+    result = func.apply(null);
   }
   self.postMessage(result);
   self.close();

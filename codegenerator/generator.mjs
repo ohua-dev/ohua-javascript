@@ -108,13 +108,13 @@ function buildWorkerMap(arcs, operators)
       }
     }
     // saving worker with targets to push result to
-    workers[key] = {worker: w, sourceTo: sourceTo};
+    workers.set(key,  {worker: w, sourceTo: sourceTo, operator: operators[key]});
   });
   return workers;
 }
 
 // registers all messagepassing listeners
-function registerEventlisteners(workers)
+function registerEventlisteners(workers, path)
 {
   console.log("registerEventlisteners");
 
@@ -131,7 +131,14 @@ function registerEventlisteners(workers)
         for (var i=0; i < length; i++)
         {
           // push to every worker waiting for the result
-          workers[value.sourceTo.target].worker.postMessage({parameter: e.data});
+          workers[value.sourceTo.target].worker.postMessage(
+            {
+              function: operators[dest].function,
+              namespace: operators[dest].namespace,
+              parameter: e.data,
+              path: path,
+            }
+          );
         }
       })
     } else
@@ -145,7 +152,7 @@ function registerEventlisteners(workers)
 }
 
 // posts the input to the entry points to trigger calculation
-function startCalculation(arcs, workers, input)
+function startCalculation(arcs, operators, path, workers, input)
 {
   console.log("start calculation");
   // find entrypoint
@@ -164,19 +171,28 @@ function startCalculation(arcs, workers, input)
   for (var i=0; i < length; i++)
   {
     let dest = starts[i].operator;
-    workers[dest].worker.postMessage({parameter: input});
+    console.log(dest);
+    console.log(workers)
+    workers.get(dest).worker.postMessage(
+      {
+        function: operators.get(dest).function,
+        namespace: operators.get(dest).namespace,
+        parameter: input,
+        path: path,
+      }
+    );
   }
 }
 
 // executing the parsed details
-function executeGraph(parsedObjects, input)
+function executeGraph(parsedObjects, path, input)
 {
   console.log("execute graph");
   var operators = parsedObjects["operators"];
   var arcs = parsedObjects["arcs"];
   var workers = buildWorkerMap(arcs, operators);
-  registerEventlisteners(workers);
-  startCalculation(arcs, workers, input);
+  registerEventlisteners(workers, path);
+  startCalculation(arcs, operators, path, workers, input);
 
   //TODO(br): find out if all operators ran
 }
@@ -185,11 +201,23 @@ function executeGraph(parsedObjects, input)
 // expect to get handed a map
 function print(parsedObjects)
 {
-  console.log("BAM")
   parsedObjects.forEach(function(value, key, map)
   {
     console.log(`m[${key}] = [${[...value]}]`);
   })
+}
+
+function extractPath(path)
+{
+  var res = path.split("/")
+  var unix = true;
+  if (res.length < 2)
+  {
+    res = path.split("\\");
+    unix = false;
+  }
+  if (unix) { return res.join("/"); }
+  else { return res.join("\\"); }
 }
 
 function main()
@@ -197,7 +225,8 @@ function main()
   var args = process.argv.slice(2); // new array of calling options skipping "node" and "generator.mjs"
 
   // loading JSON
-  var rawJSON = fs.readFileSync(args[0]);
+  var path = args[0]
+  var rawJSON = fs.readFileSync(path);
   var graph = JSON.parse(rawJSON);
   var input = args[1];
 
@@ -208,11 +237,11 @@ function main()
   structure["operators"] = returns.operations;
   structure["arcs"] = returns.arcs;
 
-  //print(structure);
   //console.log(structure);
 
+  path = extractPath(path);
   // executing
-  executeGraph(structure, input);
+  executeGraph(structure, path, input);
 }
 
 main();
