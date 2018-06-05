@@ -1,9 +1,7 @@
 TODO:
-  - statisch bauen, dann ausführen
   - Webworker vs. Node.js:
     - Adapter Node.js - Webworker: Task & Channel API (blocking Channel)
     - Statesharing?
-  - map SFN to webworkers -> start them and post result to next until done
 
 
 Node concurrency:

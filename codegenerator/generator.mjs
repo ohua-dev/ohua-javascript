@@ -233,7 +233,7 @@ function main()
   var path = args[0]
   var rawJSON = fs.readFileSync(path);
   var graph = JSON.parse(rawJSON);
-  var input = args[1];
+  var input = args.slice(start=1);
 
   var returns = parseGraph(graph);
   var structure = new Map();
