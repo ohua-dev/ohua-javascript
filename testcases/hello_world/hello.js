@@ -7,7 +7,7 @@ function world(arg)
 
 function calc(arg)
 {
-  // crashes the webworker-thread
+  // crashes the webworker-thread when called with a Number but not when called with an object
   //console.log("Input: ", arg);
   return (arg * 2) ;
 }

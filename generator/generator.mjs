@@ -95,7 +95,7 @@ function buildWorkerMap(arcs, operators)
   var Worker = require('webworker-threads').Worker;
   operators.forEach(function(value, key, map)
   {
-    let w = new Worker("codegenerator/webworker.js");
+    let w = new Worker("generator/webworker.js");
     let id = key;
     let sourceTo = [];
     let length = arcs.length;
@@ -120,7 +120,6 @@ function registerMessageHandlers(workers, path)
 
   workers.forEach(function(value, key, map)
   {
-    //console.log("function: ", value.operator.function);  // functions are correct here
     let length = value.sourceTo.length
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
@@ -128,7 +127,9 @@ function registerMessageHandlers(workers, path)
       value.worker.onmessage = function(e)
       {
         doneCallbacks++;
-        console.log("Intermediate result: ", e.data);
+
+        let result = e.data
+        console.log("Intermediate result: ", result);
 
         for (var i=0; i < length; i++)
         {
@@ -137,8 +138,8 @@ function registerMessageHandlers(workers, path)
             {
               // getting
               function: map.get(value.sourceTo[0].target).operator.function,
-              namespace: value.operator.namespace[0],
-              parameter: e.data,
+              namespace: map.get(value.sourceTo[0].target).operator.namespace[0],
+              parameter: result,
               path: path,
             }
           );
@@ -152,6 +153,12 @@ function registerMessageHandlers(workers, path)
         console.log('result: ', e.data);
         doneCallbacks++;
       }
+    }
+    // registering Error handler
+    value.worker.onerror = function(e)
+    {
+      console.error("worker for operator ",value.operator.namespace[0] + "/" +  value.operator.function, " crashed.");
+      doneCallbacks++;
     }
   })
 }
@@ -197,8 +204,6 @@ function executeGraph(parsedObjects, path, input)
   var workers = buildWorkerMap(arcs, operators);
   registerMessageHandlers(workers, path);
   startCalculation(arcs, operators, path, workers, input);
-
-  //TODO(br): find out if all operators ran
 }
 
 // just printing the parsed objects to stdout
@@ -248,7 +253,7 @@ function main()
   path = extractPath(path);
   // executing
   executeGraph(structure, path, input);
-
+  areCallbacksDone();
 }
 
 function areCallbacksDone(){
