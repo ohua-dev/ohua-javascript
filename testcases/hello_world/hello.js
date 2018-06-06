@@ -1,11 +1,13 @@
 function world(arg)
 {
-  console.info(`Input: ${arg}`);
-  return (parseInt(arg) + 2);
+  // crashes the webworker-thread when called with a Number but not when called with an object
+  //console.info("Input: ", arg);
+  return (arg + 2);
 }
 
 function calc(arg)
 {
-  console.log(`Input: ${arg}`);
-  return (parseInt(arg) * 2) ;
+  // crashes the webworker-thread
+  //console.log("Input: ", arg);
+  return (arg * 2) ;
 }

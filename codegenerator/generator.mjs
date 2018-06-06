@@ -89,7 +89,7 @@ function writeJS(parsedObjects, destination)
 // building the map of webworkers and the destination of their results
 function buildWorkerMap(arcs, operators)
 {
-  console.log("buildWorkerMap");
+  //console.log("buildWorkerMap");
 
   var workers = new Map();
   var Worker = require('webworker-threads').Worker;
@@ -116,26 +116,27 @@ function buildWorkerMap(arcs, operators)
 // registers all messagepassing listeners
 function registerMessageHandlers(workers, path)
 {
-  console.log("registerMessageHandlers");
+  //console.log("registerMessageHandlers");
 
   workers.forEach(function(value, key, map)
   {
+    //console.log("function: ", value.operator.function);  // functions are correct here
     let length = value.sourceTo.length
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
     {
       value.worker.onmessage = function(e)
       {
-        console.log('intermediate result: ', e.data);
         doneCallbacks++;
+        console.log("Intermediate result: ", e.data);
 
         for (var i=0; i < length; i++)
         {
           // push to every worker waiting for the result
-          console.log("value : ", value.sourceTo[0].target);
           workers.get(value.sourceTo[0].target).worker.postMessage(
             {
-              function: value.operator.function,
+              // getting
+              function: map.get(value.sourceTo[0].target).operator.function,
               namespace: value.operator.namespace[0],
               parameter: e.data,
               path: path,
@@ -158,7 +159,7 @@ function registerMessageHandlers(workers, path)
 // posts the input to the entry points to trigger calculation
 function startCalculation(arcs, operators, path, workers, input)
 {
-  console.log("start calculation");
+  //console.log("start calculation");
   // find entrypoint
   var starts = [];
   var length = arcs.length;
@@ -190,7 +191,7 @@ function startCalculation(arcs, operators, path, workers, input)
 // executing the parsed details
 function executeGraph(parsedObjects, path, input)
 {
-  console.log("execute graph");
+  //console.log("execute graph");
   var operators = parsedObjects["operators"];
   var arcs = parsedObjects["arcs"];
   var workers = buildWorkerMap(arcs, operators);
@@ -247,8 +248,6 @@ function main()
   path = extractPath(path);
   // executing
   executeGraph(structure, path, input);
-
-  areCallbacksDone();
 
 }
 
