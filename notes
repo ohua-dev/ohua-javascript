@@ -2,6 +2,10 @@ TODO:
   - Webworker vs. Node.js:
     - Adapter Node.js - Webworker: Task & Channel API (blocking Channel)
     - Statesharing?
+    - ignore npm modules
+    - catch exceptions on webworkers
+    - operator abstaraktion -> API
+    - Zwischenverteidigung -> Realted Work, Benchmarks, bisheriges Vorgehen -> geplantes Vorgehen
 
 
 Node concurrency:

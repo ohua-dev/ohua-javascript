@@ -120,7 +120,6 @@ function registerMessageHandlers(workers, path)
 
   workers.forEach(function(value, key, map)
   {
-    //console.log("function: ", value.operator.function);  // functions are correct here
     let length = value.sourceTo.length
     // registering Listeners & pushing results to the next Operator
     if (length > 0)
@@ -128,7 +127,13 @@ function registerMessageHandlers(workers, path)
       value.worker.onmessage = function(e)
       {
         doneCallbacks++;
-        console.log("Intermediate result: ", e.data);
+        // something went wrong in the worker
+        if (e.data.error != null) {
+          console.error("worker for operator ", key," crashed with error: ", e.error);
+          return;
+        }
+        let result = e.data.result
+        console.log("Intermediate result: ", result);
 
         for (var i=0; i < length; i++)
         {
@@ -138,7 +143,7 @@ function registerMessageHandlers(workers, path)
               // getting
               function: map.get(value.sourceTo[0].target).operator.function,
               namespace: value.operator.namespace[0],
-              parameter: e.data,
+              parameter: result,
               path: path,
             }
           );
