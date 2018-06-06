@@ -127,11 +127,7 @@ function registerMessageHandlers(workers, path)
       value.worker.onmessage = function(e)
       {
         doneCallbacks++;
-        // something went wrong in the worker
-        if (e.data.error != null) {
-          console.error("worker for operator ", key," crashed with error: ", e.error);
-          return;
-        }
+
         let result = e.data
         console.log("Intermediate result: ", result);
 
