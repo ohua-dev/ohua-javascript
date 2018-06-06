@@ -95,7 +95,7 @@ function buildWorkerMap(arcs, operators)
   var Worker = require('webworker-threads').Worker;
   operators.forEach(function(value, key, map)
   {
-    let w = new Worker("codegenerator/webworker.js");
+    let w = new Worker("generator/webworker.js");
     let id = key;
     let sourceTo = [];
     let length = arcs.length;
@@ -132,7 +132,7 @@ function registerMessageHandlers(workers, path)
           console.error("worker for operator ", key," crashed with error: ", e.error);
           return;
         }
-        let result = e.data.result
+        let result = e.data
         console.log("Intermediate result: ", result);
 
         for (var i=0; i < length; i++)
@@ -142,7 +142,7 @@ function registerMessageHandlers(workers, path)
             {
               // getting
               function: map.get(value.sourceTo[0].target).operator.function,
-              namespace: value.operator.namespace[0],
+              namespace: map.get(value.sourceTo[0].target).operator.namespace[0],
               parameter: result,
               path: path,
             }
@@ -157,6 +157,12 @@ function registerMessageHandlers(workers, path)
         console.log('result: ', e.data);
         doneCallbacks++;
       }
+    }
+    // registering Error handler
+    value.worker.onerror = function(e)
+    {
+      console.error("worker for operator ",value.operator.namespace[0] + "/" +  value.operator.function, " crashed.");
+      doneCallbacks++;
     }
   })
 }
@@ -202,8 +208,6 @@ function executeGraph(parsedObjects, path, input)
   var workers = buildWorkerMap(arcs, operators);
   registerMessageHandlers(workers, path);
   startCalculation(arcs, operators, path, workers, input);
-
-  //TODO(br): find out if all operators ran
 }
 
 // just printing the parsed objects to stdout
@@ -253,7 +257,7 @@ function main()
   path = extractPath(path);
   // executing
   executeGraph(structure, path, input);
-
+  areCallbacksDone();
 }
 
 function areCallbacksDone(){
