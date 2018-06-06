@@ -1,0 +1,14 @@
+TODO:
+  - Webworker vs. Node.js:
+    - Adapter Node.js - Webworker: Task & Channel API (blocking Channel)
+    - Statesharing?
+
+
+Node concurrency:
+  - one thread with asynchronous callbacks -> eventloop
+  - concurrency through C++-APIs (browser wpuld have web-APIs)
+  - Node does not provide conucrrency
+  - no native Webworkers -> Packages (fail to install with package manager)
+
+
+enable: --experimental-modules
