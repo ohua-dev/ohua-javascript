@@ -5,11 +5,11 @@ const reject = {};
 let globalMsgID = 0;
 
 class Operator{
-  constructor(operantID, namespace, func, portNumber, destinations=[]) {
+  constructor(operantID, namespace, func, portNumber, path) {
     this.OpID = operantID;
     this.namespace = namespace;
     this.function = func;
-    this.destinatons = destinations;
+    this.path = path;
     // setting queues for inputs
     this.ports = new Map();
     for (var i=0, i<portNumber, i++) {
@@ -60,7 +60,7 @@ class Operator{
     rejects.delete(id);
   }
 
-  startInPool(pool, operators, path) {
+  startInPool(pool) {
     var w = pool.getNextWorker();
     // register handler
     w.onmessage = handleMsg;
@@ -81,7 +81,7 @@ class Operator{
         function: this.function,
         namespace: this.namespace,
         parameters: inputs,
-        path: path
+        path: this.path
       });
   }
 }
