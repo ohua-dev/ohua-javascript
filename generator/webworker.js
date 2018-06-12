@@ -1,5 +1,8 @@
-this.onmessage = function(e)
+function doCalculation(e, cb)
 {
+  let result = null;
+  let err = null;
+
   var data = e.data;
   var func = data.function;
   console.log("running worker for function: ", func);
@@ -15,6 +18,21 @@ this.onmessage = function(e)
   {
     result = global[func]();
   }
-  self.postMessage(result);
-  self.close();
+
+  //return result;
+  cb(err,result);
+}
+
+// Handle incoming messages
+self.onmessage = function(msg) {
+  const {id, payload} = msg.data
+
+  doCalculation(payload, function(err, result) {
+    const msg = {
+      id,
+      err,
+      payload: result
+    }
+    self.postMessage(msg)
+  })
 }

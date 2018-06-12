@@ -1,5 +1,5 @@
 class WorkerPool {
-  WorkerPool(workerNumber) {
+  constructor(workerNumber) {
     var Worker = require('webworker-threads').Worker;
     this.requiredCallbacks = 0;
     this.doneCallbacks = 0;

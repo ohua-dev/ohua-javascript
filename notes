@@ -1,8 +1,7 @@
 TODO:
   - Webworker vs. Node.js:
-    - Adapter Node.js - Webworker: Task & Channel API (blocking Channel)
     - Statesharing?
-    - operator abstaraktion -> API
+    - Aufrufe auf neue Abstraktion umbauen
     - Zwischenverteidigung -> Realted Work, Benchmarks, bisheriges Vorgehen -> geplantes Vorgehen
 
 

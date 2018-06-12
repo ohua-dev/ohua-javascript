@@ -1,5 +1,11 @@
+// wrapping webworker with promises
+// https://codeburst.io/promises-for-the-web-worker-9311b7831733
+const resolves = {};
+const reject = {};
+let globalMsgID = 0;
+
 class Operator{
-  Operator(operantID, namespace, func, portNumber, destinations=[]) {
+  constructor(operantID, namespace, func, portNumber, destinations=[]) {
     this.OpID = operantID;
     this.namespace = namespace;
     this.function = func;
@@ -11,25 +17,53 @@ class Operator{
     }
   }
 
-  startInPool(pool, operators, path) {
-    var w = pool.getNextWorker();
-    // register handler
-    w.onmessage = function(e) {
-      let result = e.data;
-      console.log("Intermediate result: ", result);
-      let length = this.destinatons.length;
-      if (length > 0) {
-        for (var i=0; i < length; i++) {
-          //TODO(br): change this to varaibles present here
-          pool.getNextWorker().postMessage({
-            function: map.get(value.sourceTo[0].target).operator.function,
-            namespace: map.get(value.sourceTo[0].target).operator.namespace[0],
-            parameter: result,
-            path: path,
-          })
+  // Activate calculation in the Worker
+  sendMsg(worker, payload) {
+    const msgID = globalMsgID++;
+    const msg = {
+      id: msgID,
+      payload
+    }
+
+    return new Promise(function(resolve, reject) {
+      // save callbacks for later
+      resolves.set(msgID) = resolve;
+      rejects.set(msgID) = reject;
+
+      worker.postMessage(msg);
+    })
+  }
+
+  // Handle incoming calculation result
+  handleMsg(msg) {
+    const {id, err, payload} = msg.data;
+
+    if (payload) {
+      const resolve = resolves.get(id);
+      if (resolve) {
+        resolve(payload);
+      } else {
+        // error condition
+        const reject = reject.get(id);
+        if (reject) {
+          if (err) {
+            reject(err);
+          } else {
+            reject("No error returned");
+          }
         }
       }
     }
+
+    // delete used callbacks
+    resolves.delete(id);
+    rejects.delete(id);
+  }
+
+  startInPool(pool, operators, path) {
+    var w = pool.getNextWorker();
+    // register handler
+    w.onmessage = handleMsg;
 
     // preparing inputs for operators
     var inputs = new Map();
@@ -42,14 +76,12 @@ class Operator{
       }
     })
 
-    // start operator
-    w.postMessage(
-      {
+    // start operator returning a promise
+    return sendMsg(w, {
         function: this.function,
         namespace: this.namespace,
         parameters: inputs,
-        path: path,
-      }
-    );
+        path: path
+      });
   }
 }
