@@ -60,32 +60,6 @@ function parseGraph(ohua)
   };
 }
 
-function writeJS(parsedObjects, destination)
-{
-  // TODO(br): implement printing JS to <destination>
-  var operators = parsedObjects["operators"];
-  var arcs = parsedObjects["arcs"];
-  operators.forEach(function(key, value, map)
-  {
-    var sourcecode = `self.addEventlistener("message", function(e)
-    {
-      var data = e.data;
-      var result;
-      // webworker only support importScripts()
-      importScripts(${data.path}/${data.namespace})
-      if(data.hasOwnProperty("parameter"))
-      {
-        result = ${func}(data.parameter);
-      } else
-      {
-        result = ${func}();
-      }
-      self.postMessage(result);
-      self.close();
-    }, false)`
-  });
-}
-
 // building the map of webworkers and the destination of their results
 function buildWorkerMap(arcs, operators)
 {
