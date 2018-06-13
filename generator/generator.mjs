@@ -7,54 +7,36 @@ function getDirFromPath(path)
   return( arr.join('/') );
 }
 
-// returns imports and functions
-function extractDependencies(sfDependencies)
-{
-  var imports = new Set();
-  var functions = new Array();
-
-  var length = sfDependencies.length;
-  for (var i=0; i< length; i++)
-  {
-    var sfn = sfDependencies[i];
-    // this does not
-    imports.add(`${sfn.qbNamespace}`);
-    // this works again
-    functions.push(`${sfn.qbNamespace}.${sfn.qbName}`);
-  }
-
-  return {
-    imports: imports,
-    functions: functions
-  };
-}
-
 // returns all defined operatos with the function to call
-function extractOperators(JSONops)
+function extractOperators(JSONops, path)
 {
   var operators = new Map();
+  var operator = require("genertor/operator.mjs").Operator
 
   var length = JSONops.length;
   for (var i=0; i < length; i++)
   {
     var op = JSONops[i];
-    operators.set(op.operatorId, {namespace: op.operatorType.qbNamespace, function: op.operatorType.qbName});
+    operators.set(op.operatorId, new Operator(
+        op.operatorId,
+        op.operatorType.qbNamespace,
+        op.operatorType.qbName,
+        portNumber,
+        path
+      )
+    );
   }
   return operators;
 }
 
-function parseGraph(ohua)
+function parseGraph(ohua, path)
 {
-  // get imports and funtions
-  var dependencies = extractDependencies(ohua.sfDependencies);
   // get operators
   var ops = extractOperators(ohua.graph.operators);
   // get operators
   var arcs = ohua.graph.arcs
 
   return {
-    functions: dependencies.functions,
-    imports: dependencies.imports,
     operations: ops,
     arcs: arcs
   };
@@ -170,13 +152,15 @@ function startCalculation(arcs, operators, path, workers, input)
 }
 
 // executing the parsed details
-function executeGraph(parsedObjects, path, input)
+function executeGraph(parsedObjects, path, input, poolSize=1)
 {
+  var pool = require("generator/pool.mjs").WorkerPool;
+  var p = new Pool(poolSize);
   //console.log("execute graph");
   var operators = parsedObjects["operators"];
   var arcs = parsedObjects["arcs"];
-  var workers = buildWorkerMap(arcs, operators);
-  registerMessageHandlers(workers, path);
+  //var workers = buildWorkerMap(arcs, operators);
+  //registerMessageHandlers(workers, path);
   startCalculation(arcs, operators, path, workers, input);
 }
 
@@ -215,16 +199,15 @@ function main()
   var graph = JSON.parse(rawJSON);
   var input = args.slice(start=1);
 
-  var returns = parseGraph(graph);
+  path = extractPath(path);
+
+  var returns = parseGraph(graph, path);
   var structure = new Map();
   structure["imports"] = returns.imports;
-  structure["functions"] = returns.functions;
   structure["operators"] = returns.operations;
   structure["arcs"] = returns.arcs;
-
   //console.log(structure);
 
-  path = extractPath(path);
   // executing
   executeGraph(structure, path, input);
   areCallbacksDone();
