@@ -4,15 +4,15 @@ const resolves = {};
 const reject = {};
 let globalMsgID = 0;
 
-class Operator{
-  constructor(operantID, namespace, func, portNumber, path) {
+module.exports = class Operator{
+  constructor(operantID, namespace, func, portCount, path) {
     this.OpID = operantID;
     this.namespace = namespace;
     this.function = func;
     this.path = path;
     // setting queues for inputs
     this.ports = new Map();
-    for (var i=0, i<portNumber, i++) {
+    for (var i=0; i<portCount; i++) {
       this.ports.set(i, []);
     }
   }
@@ -85,5 +85,3 @@ class Operator{
       });
   }
 }
-
-module.exports = Operator;

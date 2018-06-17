@@ -10,14 +10,16 @@ function getDirFromPath(path)
 // returns all defined operatos with the function to call
 function extractOperators(JSONops, path)
 {
+  //TODO(br): add portnumber a parameter
+  var portNumber = 1;
   var operators = new Map();
-  var operator = require("genertor/operator.mjs").Operator
+  var operator = require("../custom_modules/operator.js")
 
   var length = JSONops.length;
   for (var i=0; i < length; i++)
   {
     var op = JSONops[i];
-    operators.set(op.operatorId, new Operator(
+    operators.set(op.operatorId, new operator(
         op.operatorId,
         op.operatorType.qbNamespace,
         op.operatorType.qbName,
@@ -43,15 +45,13 @@ function parseGraph(ohua, path)
 }
 
 // building the map of webworkers and the destination of their results
-function buildWorkerMap(arcs, operators)
+function buildOperatorMap(arcs, operators, path)
 {
   //console.log("buildWorkerMap");
 
-  var workers = new Map();
-  var Worker = require('webworker-threads').Worker;
+  var ops = new Map();
   operators.forEach(function(value, key, map)
   {
-    let w = new Worker("generator/webworker.js");
     let id = key;
     let sourceTo = [];
     let length = arcs.length;
@@ -64,9 +64,9 @@ function buildWorkerMap(arcs, operators)
       }
     }
     // saving worker with targets to push result to
-    workers.set(key,  {worker: w, sourceTo: sourceTo, operator: value});
+    ops.set(key,  sourceTo);
   });
-  return workers;
+  return ops;
 }
 
 // registers all messagepassing listeners
@@ -120,7 +120,7 @@ function registerMessageHandlers(workers, path)
 }
 
 // posts the input to the entry points to trigger calculation
-function startCalculation(arcs, operators, path, workers, input)
+function startCalculation(arcs, operators, path, ops, input)
 {
   //console.log("start calculation");
   // find entrypoint
@@ -139,7 +139,7 @@ function startCalculation(arcs, operators, path, workers, input)
   for (var i=0; i < length; i++)
   {
     let dest = starts[i].operator;
-    workers.get(dest).worker.postMessage(
+    ops.get(dest).worker.postMessage(
       {
         function: operators.get(dest).function,
         namespace: operators.get(dest).namespace[0],
@@ -154,14 +154,15 @@ function startCalculation(arcs, operators, path, workers, input)
 // executing the parsed details
 function executeGraph(parsedObjects, path, input, poolSize=1)
 {
-  var pool = require("generator/pool.mjs").WorkerPool;
+  var Pool = require("../custom_modules/pool.js");
   var p = new Pool(poolSize);
   //console.log("execute graph");
   var operators = parsedObjects["operators"];
   var arcs = parsedObjects["arcs"];
-  //var workers = buildWorkerMap(arcs, operators);
+  //build dependency
+  let ops = buildOperatorMap(arcs, operators, path);
   //registerMessageHandlers(workers, path);
-  startCalculation(arcs, operators, path, workers, input);
+  startCalculation(arcs, operators, path, ops, input);
 }
 
 // just printing the parsed objects to stdout
@@ -197,16 +198,15 @@ function main()
   var path = args[0]
   var rawJSON = fs.readFileSync(path);
   var graph = JSON.parse(rawJSON);
-  var input = args.slice(start=1);
+  var input = args.slice(1);
 
   path = extractPath(path);
 
   var returns = parseGraph(graph, path);
   var structure = new Map();
-  structure["imports"] = returns.imports;
   structure["operators"] = returns.operations;
   structure["arcs"] = returns.arcs;
-  //console.log(structure);
+  console.log("structure: ", structure);
 
   // executing
   executeGraph(structure, path, input);

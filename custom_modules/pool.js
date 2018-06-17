@@ -1,4 +1,4 @@
-class WorkerPool {
+module.exports = class WorkerPool {
   constructor(workerNumber) {
     var Worker = require('webworker-threads').Worker;
     this.requiredCallbacks = 0;
@@ -7,7 +7,7 @@ class WorkerPool {
     this.queues = new Map();
     this.poolSize = workerNumber;
     this.workers = new Map();
-    for (var i = 1, i <= this.poolSize, i++) {
+    for (var i = 1; i <= this.poolSize; i++) {
       let w = new Worker("generator/webworker.js");
       this.workers.set(i, w);
       // setting the operand queue per worker
@@ -37,5 +37,3 @@ class WorkerPool {
   }
 
 }
-
-module.exports = WorkerPool;

@@ -2,6 +2,8 @@
   "requires": true,
   "lockfileVersion": 1,
   "dependencies": {
+    "operator": "file:operator/operator.js",
+    "pool": "file:pool/pool.js",
     "npm": {
       "version": "6.1.0",
       "resolved": "https://registry.npmjs.org/npm/-/npm-6.1.0.tgz",
